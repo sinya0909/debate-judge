@@ -37,6 +37,26 @@ export function RoomList({ userId, refreshKey, onJoin, onEnter }: Props) {
 
   useEffect(() => {
     fetchRooms()
+
+    // リアルタイム購読
+    const channel = supabase
+      .channel('room-list')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'debates',
+        },
+        () => {
+          fetchRooms()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [refreshKey])
 
   const handleJoin = async (debateId: string) => {

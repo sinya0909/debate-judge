@@ -176,13 +176,15 @@ export default function DebatePage() {
     const settings = debate.settings as { time_limit: number }
     const startTime = new Date(debate.created_at).getTime()
     const endTime = startTime + settings.time_limit * 1000
+    let endCalled = false
 
     const updateTimer = () => {
       const now = Date.now()
       const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
       setRemainingTime(remaining)
 
-      if (remaining <= 0) {
+      if (remaining <= 0 && !endCalled) {
+        endCalled = true
         // 時間切れ - 終了処理
         fetch('/api/end-debate', {
           method: 'POST',
