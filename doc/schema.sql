@@ -22,9 +22,11 @@ CREATE TABLE debates (
   winner_id UUID REFERENCES users(id),
   player1_score INT DEFAULT 0,
   player2_score INT DEFAULT 0,
+  advantage INT DEFAULT 0, -- 優勢度 -10〜+10 (正: Player1優勢)
   status TEXT DEFAULT 'waiting' CHECK (status IN ('waiting', 'active', 'finished')),
-  settings JSONB DEFAULT '{"point_diff": 10, "time_limit": 600, "max_comments": 30}',
+  settings JSONB DEFAULT '{"time_limit": 600, "max_comments": 30}',
   ai_summary JSONB,
+  final_summary JSONB, -- 終了時の総評
   created_at TIMESTAMPTZ DEFAULT NOW(),
   finished_at TIMESTAMPTZ
 );
@@ -89,3 +91,23 @@ CREATE TRIGGER on_auth_user_created
 
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE debates;
+
+-- =====================
+-- 自動クリーンアップ（30日経過した終了討論を削除）
+-- =====================
+
+-- pg_cron拡張を有効化（Supabaseで利用可能）
+-- CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- 30日以上前に終了した討論を削除する関数
+CREATE OR REPLACE FUNCTION cleanup_old_debates()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM debates
+  WHERE status = 'finished'
+    AND finished_at < NOW() - INTERVAL '30 days';
+END;
+$$ LANGUAGE plpgsql;
+
+-- 毎日午前3時に実行（Supabase Dashboardでpg_cronを有効化後に実行）
+-- SELECT cron.schedule('cleanup-old-debates', '0 3 * * *', 'SELECT cleanup_old_debates()');

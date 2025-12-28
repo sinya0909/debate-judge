@@ -26,11 +26,19 @@ export type Debate = {
   winner_id: string | null
   player1_score: number
   player2_score: number
+  advantage: number // 優勢度 -10〜+10 (正: Player1優勢)
   status: 'waiting' | 'active' | 'finished'
   settings: DebateSettings
   ai_summary: DebateSummary | null
+  final_summary: FinalSummary | null
   created_at: string
   finished_at: string | null
+}
+
+// 終了時の総評
+export type FinalSummary = {
+  player1_reason: string
+  player2_reason: string
 }
 
 export type DebateSettings = {
@@ -51,9 +59,9 @@ export type Message = {
 
 // AI評価
 export type AIEvaluation = {
-  logic_score: number
+  statement_score: number // 発言スコア -2〜+2
+  advantage: number // 優勢度 -10〜+10
   reasoning: string
-  issues: string[]
 }
 
 // AI総評

@@ -6,6 +6,7 @@ import { supabase } from '@/services/supabase'
 import { Auth } from '@/components/Auth'
 import { CreateRoom } from '@/components/CreateRoom'
 import { RoomList } from '@/components/RoomList'
+import { FinishedRoomList } from '@/components/FinishedRoomList'
 import type { User } from '@supabase/supabase-js'
 
 export default function Home() {
@@ -88,6 +89,10 @@ export default function Home() {
                 onJoin={handleJoinOrEnter}
                 onEnter={handleJoinOrEnter}
               />
+            </section>
+
+            <section className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-lg">
+              <FinishedRoomList onView={handleJoinOrEnter} />
             </section>
           </main>
         ) : (

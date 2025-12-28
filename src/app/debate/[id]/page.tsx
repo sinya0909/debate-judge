@@ -296,31 +296,64 @@ export default function DebatePage() {
 
       {/* スコアボード */}
       <div className="flex-shrink-0 p-4 bg-zinc-100 dark:bg-zinc-800">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <div className="text-center flex-1">
-            <p className="text-sm text-zinc-500">Player 1</p>
-            <p className="font-semibold text-black dark:text-white">
-              {debate.player1?.display_name ?? '---'}
-              {isPlayer1 && ' (あなた)'}
-            </p>
-            <p className="text-2xl font-bold text-blue-600">{debate.player1_score}</p>
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center">
+            <div className="text-center flex-1">
+              <p className="text-sm text-zinc-500">Player 1</p>
+              <p className="font-semibold text-black dark:text-white">
+                {debate.player1?.display_name ?? '---'}
+                {isPlayer1 && ' (あなた)'}
+              </p>
+              <p className="text-lg text-zinc-600 dark:text-zinc-400">発言: {debate.player1_score}</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-zinc-400">VS</div>
+              {remainingTime !== null && debate.status === 'active' && (
+                <div className={`text-lg font-mono mt-1 ${remainingTime <= 60 ? 'text-red-500' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                  {Math.floor(remainingTime / 60)}:{(remainingTime % 60).toString().padStart(2, '0')}
+                </div>
+              )}
+            </div>
+            <div className="text-center flex-1">
+              <p className="text-sm text-zinc-500">Player 2</p>
+              <p className="font-semibold text-black dark:text-white">
+                {debate.player2?.display_name ?? '待機中...'}
+                {isPlayer2 && ' (あなた)'}
+              </p>
+              <p className="text-lg text-zinc-600 dark:text-zinc-400">発言: {debate.player2_score}</p>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-400">VS</div>
-            {remainingTime !== null && debate.status === 'active' && (
-              <div className={`text-lg font-mono mt-1 ${remainingTime <= 60 ? 'text-red-500' : 'text-zinc-600 dark:text-zinc-400'}`}>
-                {Math.floor(remainingTime / 60)}:{(remainingTime % 60).toString().padStart(2, '0')}
+          {/* 優勢度バー */}
+          {debate.status === 'active' && (
+            <div className="mt-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-blue-600 w-16 text-right">P1優勢</span>
+                <div className="flex-1 h-4 bg-zinc-300 dark:bg-zinc-600 rounded-full overflow-hidden relative">
+                  <div
+                    className="absolute top-0 h-full bg-blue-500 transition-all duration-300"
+                    style={{
+                      left: '50%',
+                      width: `${Math.max(0, (debate.advantage || 0)) * 5}%`,
+                      maxWidth: '50%'
+                    }}
+                  />
+                  <div
+                    className="absolute top-0 h-full bg-red-500 transition-all duration-300"
+                    style={{
+                      right: '50%',
+                      width: `${Math.max(0, -(debate.advantage || 0)) * 5}%`,
+                      maxWidth: '50%'
+                    }}
+                  />
+                  <div className="absolute top-0 left-1/2 w-0.5 h-full bg-zinc-400 -translate-x-1/2" />
+                </div>
+                <span className="text-xs text-red-600 w-16">P2優勢</span>
               </div>
-            )}
-          </div>
-          <div className="text-center flex-1">
-            <p className="text-sm text-zinc-500">Player 2</p>
-            <p className="font-semibold text-black dark:text-white">
-              {debate.player2?.display_name ?? '待機中...'}
-              {isPlayer2 && ' (あなた)'}
-            </p>
-            <p className="text-2xl font-bold text-red-600">{debate.player2_score}</p>
-          </div>
+              <p className="text-center text-xs text-zinc-500 mt-1">
+                優勢度: {(debate.advantage || 0) > 0 ? '+' : ''}{debate.advantage || 0}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -354,7 +387,7 @@ export default function DebatePage() {
                     <p className="whitespace-pre-wrap">{msg.content}</p>
                     {msg.ai_evaluation && (
                       <div className="mt-2 pt-2 border-t border-white/20 text-xs">
-                        <p>スコア: {msg.ai_evaluation.logic_score}</p>
+                        <p>発言: {msg.ai_evaluation.statement_score > 0 ? '+' : ''}{msg.ai_evaluation.statement_score}</p>
                         <p>{msg.ai_evaluation.reasoning}</p>
                       </div>
                     )}
@@ -409,29 +442,97 @@ export default function DebatePage() {
 
       {/* 終了画面 */}
       {debate.status === 'finished' && (
-        <div className="flex-shrink-0 p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center">
-          <p className="text-lg font-bold mb-2">討論終了</p>
-          {debate.winner_id ? (
-            <>
-              <p className="text-3xl font-bold mb-2">
-                {debate.winner_id === debate.player1_id
-                  ? debate.player1?.display_name
-                  : debate.player2?.display_name}
-                の勝利！
-              </p>
-              <p className="text-xl">
-                {debate.player1_score} - {debate.player2_score}
-              </p>
-            </>
-          ) : (
-            <p className="text-2xl font-bold">引き分け</p>
-          )}
-          <button
-            onClick={() => router.push('/')}
-            className="mt-4 px-6 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-zinc-100"
-          >
-            トップに戻る
-          </button>
+        <div className="flex-shrink-0 p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <div className="max-w-2xl mx-auto">
+            <p className="text-lg font-bold mb-2 text-center">討論終了</p>
+            {debate.winner_id ? (
+              <div className="text-center mb-4">
+                <p className="text-3xl font-bold mb-2">
+                  {debate.winner_id === debate.player1_id
+                    ? debate.player1?.display_name
+                    : debate.player2?.display_name}
+                  の勝利！
+                </p>
+              </div>
+            ) : (
+              <p className="text-2xl font-bold text-center mb-4">引き分け</p>
+            )}
+
+            {/* 優勢度バー（終了時） */}
+            <div className="bg-white/10 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs w-16 text-right">P1優勢</span>
+                <div className="flex-1 h-4 bg-white/20 rounded-full overflow-hidden relative">
+                  <div
+                    className="absolute top-0 h-full bg-blue-300 transition-all duration-300"
+                    style={{
+                      left: '50%',
+                      width: `${Math.max(0, (debate.advantage || 0)) * 5}%`,
+                      maxWidth: '50%'
+                    }}
+                  />
+                  <div
+                    className="absolute top-0 h-full bg-red-300 transition-all duration-300"
+                    style={{
+                      right: '50%',
+                      width: `${Math.max(0, -(debate.advantage || 0)) * 5}%`,
+                      maxWidth: '50%'
+                    }}
+                  />
+                  <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white/50 -translate-x-1/2" />
+                </div>
+                <span className="text-xs w-16">P2優勢</span>
+              </div>
+              <div className="grid grid-cols-3 text-center text-sm">
+                <div>
+                  <p className="text-blue-200">{debate.player1?.display_name}</p>
+                  <p>発言: {debate.player1_score}</p>
+                </div>
+                <div>
+                  <p className="text-white/60">優勢度</p>
+                  <p className="text-xl font-bold">{(debate.advantage || 0) > 0 ? '+' : ''}{debate.advantage || 0}</p>
+                </div>
+                <div>
+                  <p className="text-red-200">{debate.player2?.display_name}</p>
+                  <p>発言: {debate.player2_score}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 総評 */}
+            {debate.final_summary && (
+              <div className="bg-white/10 rounded-lg p-4 mb-4">
+                <p className="font-bold mb-3 text-center">総評</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white/10 rounded p-3">
+                    <p className="font-semibold text-blue-200 mb-2">
+                      {debate.player1?.display_name}
+                    </p>
+                    <p className="text-sm text-white/80">
+                      {debate.final_summary.player1_reason}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 rounded p-3">
+                    <p className="font-semibold text-red-200 mb-2">
+                      {debate.player2?.display_name}
+                    </p>
+                    <p className="text-sm text-white/80">
+                      {debate.final_summary.player2_reason}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="text-center">
+              <button
+                onClick={() => router.push('/')}
+                className="px-6 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-zinc-100"
+              >
+                トップに戻る
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
