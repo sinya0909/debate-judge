@@ -64,6 +64,16 @@ export type AIEvaluation = {
   reasoning: string
 }
 
+// 討論ページ用の拡張型
+export type DebateWithPlayers = Debate & {
+  player1: { display_name: string } | null
+  player2: { display_name: string } | null
+}
+
+export type MessageWithUser = Message & {
+  user: { display_name: string } | null
+}
+
 // AI総評
 export type DebateSummary = {
   winner: string
