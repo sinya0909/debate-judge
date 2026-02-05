@@ -8,6 +8,16 @@ type Props = {
   onBack: () => void
 }
 
+function formatReason(reason: unknown): string {
+  if (typeof reason === 'string') return reason
+  if (reason && typeof reason === 'object') {
+    return Object.entries(reason)
+      .map(([key, val]) => `${key}: ${val}`)
+      .join('\n')
+  }
+  return ''
+}
+
 export function DebateResult({ debate, onBack }: Props) {
   const advantage = debate.advantage || 0
 
@@ -58,16 +68,16 @@ export function DebateResult({ debate, onBack }: Props) {
                 <p className="font-semibold text-blue-200 mb-2">
                   {debate.player1?.display_name}
                 </p>
-                <p className="text-sm text-white/80">
-                  {debate.final_summary.player1_reason}
+                <p className="text-sm text-white/80 whitespace-pre-wrap">
+                  {formatReason(debate.final_summary.player1_reason)}
                 </p>
               </div>
               <div className="bg-white/10 rounded p-3">
                 <p className="font-semibold text-red-200 mb-2">
                   {debate.player2?.display_name}
                 </p>
-                <p className="text-sm text-white/80">
-                  {debate.final_summary.player2_reason}
+                <p className="text-sm text-white/80 whitespace-pre-wrap">
+                  {formatReason(debate.final_summary.player2_reason)}
                 </p>
               </div>
             </div>
