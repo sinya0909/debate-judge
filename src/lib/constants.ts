@@ -5,6 +5,9 @@ export const DEFAULT_SETTINGS = {
   MAX_COMMENTS: 30,
 } as const
 
+// AIユーザー
+export const AI_USER_ID = '00000000-0000-0000-0000-000000000001'
+
 // 討論ステータス
 export const DEBATE_STATUS = {
   WAITING: 'waiting',

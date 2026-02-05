@@ -45,6 +45,7 @@ export type DebateSettings = {
   point_diff: number
   time_limit: number
   max_comments: number
+  is_ai_match?: boolean
 }
 
 // メッセージ

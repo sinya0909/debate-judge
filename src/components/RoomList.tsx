@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/services/supabase'
-import type { Debate } from '@/lib/types'
+import type { Debate, DebateSettings } from '@/lib/types'
 
 type Props = {
   userId: string
@@ -102,15 +102,22 @@ export function RoomList({ userId, refreshKey, onJoin, onEnter }: Props) {
                   作成者: {room.player1?.display_name ?? '不明'}
                   {isPlayer1 && ' (あなた)'}
                 </p>
-                <span
-                  className={`inline-block mt-2 px-2 py-0.5 text-xs rounded ${
-                    room.status === 'waiting'
-                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  }`}
-                >
-                  {room.status === 'waiting' ? '対戦相手待ち' : '討論中'}
-                </span>
+                <div className="flex gap-1.5 mt-2">
+                  <span
+                    className={`inline-block px-2 py-0.5 text-xs rounded ${
+                      room.status === 'waiting'
+                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    }`}
+                  >
+                    {room.status === 'waiting' ? '対戦相手待ち' : '討論中'}
+                  </span>
+                  {(room.settings as DebateSettings).is_ai_match && (
+                    <span className="inline-block px-2 py-0.5 text-xs rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      AI対戦
+                    </span>
+                  )}
+                </div>
               </div>
               <div>
                 {canJoin && (
