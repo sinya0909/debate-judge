@@ -152,7 +152,8 @@ async function generateSummary(
     .map((m, i) => `${i + 1}. ${m.content}`)
     .join('\n')
 
-  const prompt = `あなたは討論の審判です。以下の討論全体を総評してください。
+  const prompt = `あなたは討論の審判です。各プレイヤーの討論者としてのパフォーマンスを評価してください。
+議論内容の要約ではなく、論証の巧みさ・具体例の使い方・反論の的確さなど、討論スキルの観点で評価してください。
 
 【討論テーマ】
 ${theme}
@@ -163,16 +164,16 @@ ${player1Args || '（発言なし）'}
 【Player2の議論】
 ${player2Args || '（発言なし）'}
 
-各プレイヤーの総評を簡潔に述べてください（各50文字以内の文字列で）。
+各プレイヤーへの評価を簡潔に述べてください（各50文字以内の文字列で）。
 
 JSON形式で回答：
-{"player1_reason": "Player1の総評（文字列）", "player2_reason": "Player2の総評（文字列）"}`
+{"player1_reason": "Player1への評価（文字列）", "player2_reason": "Player2への評価（文字列）"}`
 
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: '討論の総評を行う審判です。JSON形式でのみ回答してください。値は必ず文字列にしてください。' },
+        { role: 'system', content: '討論の審判です。議論内容の要約ではなく、討論者としてのスキルを評価してください。JSON形式でのみ回答し、値は必ず文字列にしてください。' },
         { role: 'user', content: prompt },
       ],
       temperature: 0.3,

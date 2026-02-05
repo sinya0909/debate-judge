@@ -38,25 +38,18 @@ export function DebateResult({ debate, onBack }: Props) {
           <p className="text-2xl font-bold text-center mb-4">引き分け</p>
         )}
 
-        {/* 優勢度バー */}
+        {/* スコアバー */}
         <div className="bg-white/10 rounded-lg p-4 mb-4">
-          <div className="mb-2">
-            <AdvantageBar advantage={advantage} variant="result" />
+          <div className="flex items-center text-sm mb-2">
+            <span className="flex-1 text-blue-200">{debate.player1?.display_name}</span>
+            <span className="text-white/60 text-xs">スコア差 {advantage > 0 ? '+' : ''}{advantage}</span>
+            <span className="flex-1 text-red-200 text-right">{debate.player2?.display_name}</span>
           </div>
-          <div className="grid grid-cols-3 text-center text-sm">
-            <div>
-              <p className="text-blue-200">{debate.player1?.display_name}</p>
-              <p className="text-xl font-bold">{debate.player1_score}/10</p>
-            </div>
-            <div>
-              <p className="text-white/60">スコア差</p>
-              <p className="text-xl font-bold">{advantage > 0 ? '+' : ''}{advantage}</p>
-            </div>
-            <div>
-              <p className="text-red-200">{debate.player2?.display_name}</p>
-              <p className="text-xl font-bold">{debate.player2_score}/10</p>
-            </div>
-          </div>
+          <AdvantageBar
+            player1Score={debate.player1_score || 0}
+            player2Score={debate.player2_score || 0}
+            variant="result"
+          />
         </div>
 
         {/* 総評 */}
