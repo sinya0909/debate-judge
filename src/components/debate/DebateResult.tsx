@@ -46,15 +46,15 @@ export function DebateResult({ debate, onBack }: Props) {
           <div className="grid grid-cols-3 text-center text-sm">
             <div>
               <p className="text-blue-200">{debate.player1?.display_name}</p>
-              <p>発言: {debate.player1_score}</p>
+              <p className="text-xl font-bold">{debate.player1_score}/10</p>
             </div>
             <div>
-              <p className="text-white/60">優勢度</p>
+              <p className="text-white/60">スコア差</p>
               <p className="text-xl font-bold">{advantage > 0 ? '+' : ''}{advantage}</p>
             </div>
             <div>
               <p className="text-red-200">{debate.player2?.display_name}</p>
-              <p>発言: {debate.player2_score}</p>
+              <p className="text-xl font-bold">{debate.player2_score}/10</p>
             </div>
           </div>
         </div>

@@ -12,9 +12,9 @@ const supabase = createClient(
 );
 
 type EvaluationResult = {
-  statement_score: number; // 発言スコア -2〜+2
-  advantage: number; // 優勢度 -10〜+10 (正: Player1優勢、負: Player2優勢)
-  reasoning: string;
+  player1_score: number;
+  player2_score: number;
+  latest_feedback: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -22,10 +22,9 @@ export async function POST(request: NextRequest) {
     const { messageId, debateId, userId, content, theme, previousMessages } =
       await request.json();
 
-    // 現在のメッセージを含めた全発言リストを作成
     const { data: debate } = await supabase
       .from("debates")
-      .select("player1_id, player2_id, player1_score, player2_score")
+      .select("player1_id, player2_id")
       .eq("id", debateId)
       .single();
 
@@ -36,27 +35,27 @@ export async function POST(request: NextRequest) {
     const isPlayer1 = userId === debate.player1_id;
     const allMessages = [
       ...previousMessages,
-      { content, isPlayer1 }
-    ];
+      { content, isPlayer1 },
+    ] as { content: string; isPlayer1: boolean }[];
 
-    // AI評価を取得（全発言を見て優勢度も判定）
-    const evaluation = await evaluateMessage(content, theme, allMessages, isPlayer1);
+    // 各プレイヤーの議論を分離して全体評価
+    const evaluation = await evaluateDebate(theme, allMessages);
 
-    // メッセージにAI評価を保存
+    // メッセージにフィードバックを保存
     await supabase
       .from("messages")
       .update({ ai_evaluation: evaluation })
       .eq("id", messageId);
 
-    // 発言スコアを累積
-    const newScore = isPlayer1
-      ? { player1_score: debate.player1_score + evaluation.statement_score }
-      : { player2_score: debate.player2_score + evaluation.statement_score };
-
-    // 優勢度も更新
+    // 討論テーブルのスコアと優勢度を更新
+    const advantage = evaluation.player1_score - evaluation.player2_score;
     await supabase
       .from("debates")
-      .update({ ...newScore, advantage: evaluation.advantage })
+      .update({
+        player1_score: evaluation.player1_score,
+        player2_score: evaluation.player2_score,
+        advantage,
+      })
       .eq("id", debateId);
 
     // 終了条件チェック
@@ -69,60 +68,44 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function evaluateMessage(
-  content: string,
+async function evaluateDebate(
   theme: string,
-  allMessages: { content: string; isPlayer1: boolean }[],
-  isCurrentPlayer1: boolean
+  allMessages: { content: string; isPlayer1: boolean }[]
 ): Promise<EvaluationResult> {
-  const conversationContext = allMessages
-    .map((m) => `${m.isPlayer1 ? "Player1" : "Player2"}: ${m.content}`)
+  const player1Args = allMessages
+    .filter((m) => m.isPlayer1)
+    .map((m, i) => `${i + 1}. ${m.content}`)
     .join("\n");
 
-  const currentPlayer = isCurrentPlayer1 ? "Player1" : "Player2";
+  const player2Args = allMessages
+    .filter((m) => !m.isPlayer1)
+    .map((m, i) => `${i + 1}. ${m.content}`)
+    .join("\n");
 
-  const prompt = `あなたは討論の審判です。討論全体を見て、最新の発言を評価し、現時点での優勢度を判定してください。
+  const prompt = `あなたは討論の審判です。各プレイヤーの議論全体を評価してください。
 
 【討論テーマ】
 ${theme}
 
-【討論全体】
-${conversationContext}
+【Player1の議論】
+${player1Args || "（まだ発言なし）"}
 
-【評価対象】
-最新の発言者: ${currentPlayer}
-最新の発言: 「${content}」
+【Player2の議論】
+${player2Args || "（まだ発言なし）"}
 
-## 2つの評価を行ってください
+各プレイヤーの議論を以下の観点で0〜10点で総合評価してください：
 
-### 1. 発言スコア (statement_score): -2〜+2
-この発言単体の質を評価：
-- +2: 相手の主張を的確に論破、具体的根拠あり
-- +1: 論理的な主張・反論
-- 0: 普通の発言、質問
-- -1: 根拠不足、関連が薄い
-- -2: 論点ずらし、質問無視、負けを認める
+評価基準：
+- 論理の一貫性: 主張が矛盾なく一貫しているか
+- 根拠の具体性: 具体的な根拠・事例を示しているか
+- 反論の成功度: 相手の主張を効果的に崩せているか
+- 議論の主導権: 議論をリードし、相手に答えさせているか
+- 前提への問い: 相手の前提や定義を的確に突いているか
 
-### 2. 優勢度 (advantage): -10〜+10
-討論全体を通して、現時点でどちらが優勢かを判定：
-- +10: Player1が圧倒的優勢（論破済み）
-- +5: Player1がやや優勢
-- 0: 互角
-- -5: Player2がやや優勢
-- -10: Player2が圧倒的優勢
-
-優勢度の判断基準：
-- 一貫性: 主張が矛盾なく一貫しているか
-- 論理構成: 論理的に整理された主張か
-- 反論の成功: 相手の主張を崩せているか
-- 主導権: 議論をリードしているか
-
-【重要】
-- 他者の事例引用（「〇〇は敗北した」等）は論拠として評価
-- 相手の一部を認めつつ反論は建設的（減点しない）
+加えて、最新の発言に対する短いフィードバックを書いてください。
 
 JSON形式のみで回答：
-{"statement_score": 数値, "advantage": 数値, "reasoning": "50文字以内の評価理由"}`;
+{"player1_score": 数値, "player2_score": 数値, "latest_feedback": "最新発言へのフィードバック（30文字以内）"}`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -130,7 +113,8 @@ JSON形式のみで回答：
       messages: [
         {
           role: "system",
-          content: "討論の審判です。発言評価と優勢度判定を行います。JSON形式でのみ回答してください。",
+          content:
+            "討論の審判です。各プレイヤーの議論全体を公平に評価します。JSON形式でのみ回答してください。",
         },
         { role: "user", content: prompt },
       ],
@@ -146,9 +130,9 @@ JSON形式のみで回答：
       const parsed = JSON.parse(cleanedJson);
 
       return {
-        statement_score: Math.max(-2, Math.min(2, Math.round(parsed.statement_score || 0))),
-        advantage: Math.max(-10, Math.min(10, Math.round(parsed.advantage || 0))),
-        reasoning: parsed.reasoning || "",
+        player1_score: Math.max(0, Math.min(10, Math.round(parsed.player1_score || 0))),
+        player2_score: Math.max(0, Math.min(10, Math.round(parsed.player2_score || 0))),
+        latest_feedback: String(parsed.latest_feedback || ""),
       };
     }
   } catch (e) {
@@ -156,9 +140,9 @@ JSON形式のみで回答：
   }
 
   return {
-    statement_score: 0,
-    advantage: 0,
-    reasoning: "評価できませんでした",
+    player1_score: 0,
+    player2_score: 0,
+    latest_feedback: "評価できませんでした",
   };
 }
 
@@ -176,7 +160,6 @@ async function checkEndCondition(debateId: string) {
     max_comments: number;
   };
 
-  // コメント数による終了のみ（10点差終了は廃止）
   const { count } = await supabase
     .from("messages")
     .select("*", { count: "exact", head: true })
@@ -187,15 +170,16 @@ async function checkEndCondition(debateId: string) {
   }
 }
 
-async function endDebate(debateId: string, debate: {
-  theme: string;
-  player1_id: string;
-  player2_id: string;
-  player1_score: number;
-  player2_score: number;
-  advantage?: number;
-}) {
-  // 全メッセージを取得して総評を作成
+async function endDebate(
+  debateId: string,
+  debate: {
+    theme: string;
+    player1_id: string;
+    player2_id: string;
+    player1_score: number;
+    player2_score: number;
+  }
+) {
   const { data: messages } = await supabase
     .from("messages")
     .select("content, user_id")
@@ -216,21 +200,15 @@ async function endDebate(debateId: string, debate: {
     );
   }
 
-  // 最終スコア = 優勢度 + (発言スコア差 / 5)
-  const advantage = debate.advantage || 0;
-  const scoreDiff = debate.player1_score - debate.player2_score;
-  const finalScore = advantage + (scoreDiff / 5);
-
-  // 勝者判定
+  // 勝者判定: スコア差で決定
+  const diff = (debate.player1_score || 0) - (debate.player2_score || 0);
   let winnerId = null;
-  if (finalScore > 0.5) {
+  if (diff > 0.5) {
     winnerId = debate.player1_id;
-  } else if (finalScore < -0.5) {
+  } else if (diff < -0.5) {
     winnerId = debate.player2_id;
   }
-  // -0.5〜0.5は引き分け
 
-  // 討論を終了
   const { error: updateError } = await supabase
     .from("debates")
     .update({
@@ -253,7 +231,6 @@ async function endDebate(debateId: string, debate: {
       .eq("id", debateId);
   }
 
-  // ユーザー統計を更新
   if (winnerId) {
     await updateUserStats(debate.player1_id, debate.player2_id, winnerId);
   }
@@ -265,11 +242,14 @@ async function generateSummary(
   player1Id: string,
   player2Id: string
 ) {
-  const conversation = messages
-    .map((m) => {
-      const player = m.user_id === player1Id ? "Player1" : "Player2";
-      return `${player}: ${m.content}`;
-    })
+  const player1Args = messages
+    .filter((m) => m.user_id === player1Id)
+    .map((m, i) => `${i + 1}. ${m.content}`)
+    .join("\n");
+
+  const player2Args = messages
+    .filter((m) => m.user_id === player2Id)
+    .map((m, i) => `${i + 1}. ${m.content}`)
     .join("\n");
 
   const prompt = `あなたは討論の審判です。以下の討論全体を総評してください。
@@ -277,21 +257,26 @@ async function generateSummary(
 【討論テーマ】
 ${theme}
 
-【討論内容】
-${conversation}
+【Player1の議論】
+${player1Args || "（発言なし）"}
 
-各プレイヤーの総評を簡潔に述べてください（各50文字以内）：
-- 良かった点
-- 改善点
+【Player2の議論】
+${player2Args || "（発言なし）"}
+
+各プレイヤーの総評を簡潔に述べてください（各50文字以内の文字列で）。
 
 JSON形式で回答：
-{"player1_reason": "Player1の総評", "player2_reason": "Player2の総評"}`;
+{"player1_reason": "Player1の総評（文字列）", "player2_reason": "Player2の総評（文字列）"}`;
 
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "討論の総評を行う審判です。JSON形式でのみ回答してください。" },
+        {
+          role: "system",
+          content:
+            "討論の総評を行う審判です。JSON形式でのみ回答してください。値は必ず文字列にしてください。",
+        },
         { role: "user", content: prompt },
       ],
       temperature: 0.3,
@@ -304,8 +289,8 @@ JSON形式で回答：
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       return {
-        player1_reason: parsed.player1_reason || "",
-        player2_reason: parsed.player2_reason || "",
+        player1_reason: String(parsed.player1_reason || ""),
+        player2_reason: String(parsed.player2_reason || ""),
       };
     }
   } catch (e) {
@@ -342,7 +327,10 @@ async function updateUserStats(
   if (loser) {
     await supabase
       .from("users")
-      .update({ losses: loser.losses + 1, debate_count: loser.debate_count + 1 })
+      .update({
+        losses: loser.losses + 1,
+        debate_count: loser.debate_count + 1,
+      })
       .eq("id", loserId);
   }
 }

@@ -46,19 +46,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 最終スコア = 優勢度 + (発言スコア差 / 5)
-    const advantage = debate.advantage || 0
-    const scoreDiff = debate.player1_score - debate.player2_score
-    const finalScore = advantage + (scoreDiff / 5)
-
-    // 勝者判定
+    // 勝者判定: スコア差で決定
+    const diff = (debate.player1_score || 0) - (debate.player2_score || 0)
     let winnerId = null
-    if (finalScore > 0.5) {
+    if (diff > 0.5) {
       winnerId = debate.player1_id
-    } else if (finalScore < -0.5) {
+    } else if (diff < -0.5) {
       winnerId = debate.player2_id
     }
-    // -0.5〜0.5は引き分け
 
     // 討論を終了
     const { error: updateError } = await supabase
@@ -133,7 +128,7 @@ export async function POST(request: NextRequest) {
       success: true,
       winnerId,
       reason,
-      finalScore,
+      diff,
     })
   } catch (error) {
     console.error('End debate error:', error)
@@ -147,11 +142,14 @@ async function generateSummary(
   player1Id: string,
   player2Id: string
 ) {
-  const conversation = messages
-    .map((m) => {
-      const player = m.user_id === player1Id ? 'Player1' : 'Player2'
-      return `${player}: ${m.content}`
-    })
+  const player1Args = messages
+    .filter((m) => m.user_id === player1Id)
+    .map((m, i) => `${i + 1}. ${m.content}`)
+    .join('\n')
+
+  const player2Args = messages
+    .filter((m) => m.user_id === player2Id)
+    .map((m, i) => `${i + 1}. ${m.content}`)
     .join('\n')
 
   const prompt = `あなたは討論の審判です。以下の討論全体を総評してください。
@@ -159,21 +157,22 @@ async function generateSummary(
 【討論テーマ】
 ${theme}
 
-【討論内容】
-${conversation}
+【Player1の議論】
+${player1Args || '（発言なし）'}
 
-各プレイヤーの総評を簡潔に述べてください（各50文字以内）：
-- 良かった点
-- 改善点
+【Player2の議論】
+${player2Args || '（発言なし）'}
+
+各プレイヤーの総評を簡潔に述べてください（各50文字以内の文字列で）。
 
 JSON形式で回答：
-{"player1_reason": "Player1の総評", "player2_reason": "Player2の総評"}`
+{"player1_reason": "Player1の総評（文字列）", "player2_reason": "Player2の総評（文字列）"}`
 
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: '討論の総評を行う審判です。JSON形式でのみ回答してください。' },
+        { role: 'system', content: '討論の総評を行う審判です。JSON形式でのみ回答してください。値は必ず文字列にしてください。' },
         { role: 'user', content: prompt },
       ],
       temperature: 0.3,
@@ -186,8 +185,8 @@ JSON形式で回答：
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0])
       return {
-        player1_reason: parsed.player1_reason || '',
-        player2_reason: parsed.player2_reason || '',
+        player1_reason: String(parsed.player1_reason || ''),
+        player2_reason: String(parsed.player2_reason || ''),
       }
     }
   } catch (e) {

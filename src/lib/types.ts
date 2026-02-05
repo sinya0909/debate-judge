@@ -59,9 +59,12 @@ export type Message = {
 
 // AI評価
 export type AIEvaluation = {
-  statement_score: number // 発言スコア -2〜+2
-  advantage: number // 優勢度 -10〜+10
-  reasoning: string
+  player1_score: number // Player1の総合スコア 0〜10
+  player2_score: number // Player2の総合スコア 0〜10
+  latest_feedback: string // 最新発言へのフィードバック
+  // 旧形式との互換用
+  statement_score?: number
+  reasoning?: string
 }
 
 // 討論ページ用の拡張型

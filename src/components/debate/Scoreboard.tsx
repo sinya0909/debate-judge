@@ -23,7 +23,7 @@ export function Scoreboard({ debate, currentUserId, remainingTime }: Props) {
               {debate.player1?.display_name ?? '---'}
               {isPlayer1 && ' (あなた)'}
             </p>
-            <p className="text-lg text-zinc-600 dark:text-zinc-400">発言: {debate.player1_score}</p>
+            <p className="text-lg text-zinc-600 dark:text-zinc-400">{debate.player1_score}/10</p>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-zinc-400">VS</div>
@@ -39,7 +39,7 @@ export function Scoreboard({ debate, currentUserId, remainingTime }: Props) {
               {debate.player2?.display_name ?? '待機中...'}
               {isPlayer2 && ' (あなた)'}
             </p>
-            <p className="text-lg text-zinc-600 dark:text-zinc-400">発言: {debate.player2_score}</p>
+            <p className="text-lg text-zinc-600 dark:text-zinc-400">{debate.player2_score}/10</p>
           </div>
         </div>
         {debate.status === 'active' && (

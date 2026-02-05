@@ -46,8 +46,7 @@ export function MessageList({ messages, currentUserId, player1Id }: Props) {
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                   {msg.ai_evaluation && (
                     <div className="mt-2 pt-2 border-t border-white/20 text-xs">
-                      <p>発言: {msg.ai_evaluation.statement_score > 0 ? '+' : ''}{msg.ai_evaluation.statement_score}</p>
-                      <p>{msg.ai_evaluation.reasoning}</p>
+                      <p>{msg.ai_evaluation.latest_feedback || msg.ai_evaluation.reasoning || ''}</p>
                     </div>
                   )}
                 </div>
