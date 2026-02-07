@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/services/supabase'
-import { AI_USER_ID } from '@/lib/constants'
+import { AI_USER_ID, RANDOM_THEMES } from '@/lib/constants'
 
 type Props = {
   userId: string
@@ -13,6 +13,11 @@ export function CreateRoom({ userId, onCreated }: Props) {
   const [theme, setTheme] = useState('')
   const [loading, setLoading] = useState(false)
   const [isAiMatch, setIsAiMatch] = useState(false)
+
+  const handleRandomTheme = () => {
+    const index = Math.floor(Math.random() * RANDOM_THEMES.length)
+    setTheme(RANDOM_THEMES[index])
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,6 +67,13 @@ export function CreateRoom({ userId, onCreated }: Props) {
         placeholder="討論テーマを入力..."
         className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
+      <button
+        type="button"
+        onClick={handleRandomTheme}
+        className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm hover:bg-zinc-300 dark:hover:bg-zinc-600 whitespace-nowrap"
+      >
+        ランダム
+      </button>
       <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400 whitespace-nowrap cursor-pointer">
         <input
           type="checkbox"
