@@ -7,9 +7,10 @@ type Props = {
   messages: MessageWithUser[]
   currentUserId: string
   player1Id: string
+  footer?: React.ReactNode
 }
 
-export function MessageList({ messages, currentUserId, player1Id }: Props) {
+export function MessageList({ messages, currentUserId, player1Id, footer }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export function MessageList({ messages, currentUserId, player1Id }: Props) {
             )
           })
         )}
+        {footer}
         <div ref={messagesEndRef} />
       </div>
     </div>

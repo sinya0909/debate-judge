@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
+import { loadPrompt } from '@/lib/prompts/loader'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -45,40 +46,21 @@ export async function generateSummary(
   const player1Args = messages
     .filter((m) => m.user_id === player1Id)
     .map((m, i) => `${i + 1}. ${m.content}`)
-    .join('\n')
+    .join('\n') || '（発言なし）'
 
   const player2Args = messages
     .filter((m) => m.user_id === player2Id)
     .map((m, i) => `${i + 1}. ${m.content}`)
-    .join('\n')
+    .join('\n') || '（発言なし）'
 
-  const prompt = `あなたは討論の審判です。各プレイヤーの討論者としてのパフォーマンスを評価してください。
-議論内容の要約ではなく、論理構造の妥当性（推論の接続・誤謬の有無）・相手の論理的欠陥を突く力・反論の構造的正確さの観点で評価してください。根拠や事例の有無ではなく、論理の質を評価してください。
-
-【討論テーマ】
-${theme}
-
-【Player1の議論】
-${player1Args || '（発言なし）'}
-
-【Player2の議論】
-${player2Args || '（発言なし）'}
-
-各プレイヤーへの評価を簡潔に述べてください（各50文字以内の文字列で）。
-
-JSON形式で回答：
-{"player1_reason": "Player1への評価（文字列）", "player2_reason": "Player2への評価（文字列）"}`
+  const prompt = loadPrompt('summary', { theme, player1Args, player2Args })
 
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        {
-          role: 'system',
-          content:
-            '討論の審判です。議論内容の要約ではなく、各プレイヤーの論理構造の妥当性と相手の誤謬を突く力を評価してください。根拠・事例の有無は評価基準に含めないこと。JSON形式でのみ回答し、値は必ず文字列にしてください。',
-        },
-        { role: 'user', content: prompt },
+        { role: 'system', content: prompt.system },
+        { role: 'user', content: prompt.user },
       ],
       temperature: 0.3,
       max_tokens: 300,

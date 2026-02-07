@@ -8,6 +8,15 @@ export const DEFAULT_SETTINGS = {
 // AIユーザー
 export const AI_USER_ID = '00000000-0000-0000-0000-000000000001'
 
+// 加点ルールの点数マップ
+export const MERIT_POINTS: Record<string, number> = {
+  "相手の誤謬を正確に指摘": 2,
+  "帰謬法・背理法による有効な反論": 2,
+  "前提の妥当性への正当な疑義": 1,
+  "相手の暗黙の前提を顕在化して攻撃": 1,
+  "論理的接続が明確で飛躍がない推論": 1,
+}
+
 // 討論ステータス
 export const DEBATE_STATUS = {
   WAITING: 'waiting',

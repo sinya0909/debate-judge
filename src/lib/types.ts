@@ -82,6 +82,25 @@ export type AIEvaluation = {
   reasoning?: string
 }
 
+// evaluateDebate の返り値型（全フィールド確定）
+export type EvaluationResult = {
+  player1_score: number
+  player2_score: number
+  latest_feedback: string
+  p1_fallacies: FallacyEntry[]
+  p2_fallacies: FallacyEntry[]
+  p1_merits: string[]
+  p2_merits: string[]
+  p1_contradictions: string
+  p2_contradictions: string
+}
+
+// 前回検出済み詭弁（累積用）
+export type PreviousFallacies = {
+  p1_fallacies: FallacyEntry[]
+  p2_fallacies: FallacyEntry[]
+}
+
 // 討論ページ用の拡張型
 export type DebateWithPlayers = Debate & {
   player1: { display_name: string } | null

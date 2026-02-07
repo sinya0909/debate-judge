@@ -40,12 +40,19 @@ export function Scoreboard({ debate, currentUserId, remainingTime }: Props) {
             </p>
           </div>
         </div>
-        {debate.status === 'active' && (
+        {debate.status !== 'waiting' && (
           <div className="mt-3">
             <AdvantageBar
               player1Score={debate.player1_score || 0}
               player2Score={debate.player2_score || 0}
             />
+            {debate.status === 'finished' && (
+              <p className="text-center text-sm font-bold mt-2 text-yellow-600 dark:text-yellow-400">
+                {debate.winner_id
+                  ? `${debate.winner_id === debate.player1_id ? debate.player1?.display_name : debate.player2?.display_name} の勝利`
+                  : '引き分け'}
+              </p>
+            )}
           </div>
         )}
       </div>

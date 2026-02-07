@@ -6,7 +6,7 @@ import { useDebate } from '@/hooks/useDebate'
 import { Scoreboard } from '@/components/debate/Scoreboard'
 import { MessageList } from '@/components/debate/MessageList'
 import { MessageInput } from '@/components/debate/MessageInput'
-import { DebateResult } from '@/components/debate/DebateResult'
+import type { DebateWithPlayers } from '@/lib/types'
 
 export default function DebatePage() {
   const params = useParams()
@@ -85,7 +85,12 @@ export default function DebatePage() {
       </header>
 
       <Scoreboard debate={debate} currentUserId={user.id} remainingTime={remainingTime} />
-      <MessageList messages={messages} currentUserId={user.id} player1Id={debate.player1_id} />
+      <MessageList
+        messages={messages}
+        currentUserId={user.id}
+        player1Id={debate.player1_id}
+        footer={debate.status === 'finished' ? <DebateSummaryFooter debate={debate} /> : undefined}
+      />
 
       {isParticipant && debate.status === 'active' && (
         <MessageInput
@@ -111,8 +116,43 @@ export default function DebatePage() {
       )}
 
       {debate.status === 'finished' && (
-        <DebateResult debate={debate} onBack={() => router.push('/')} />
+        <div className="flex-shrink-0 p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-700 text-center">
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+          >
+            トップに戻る
+          </button>
+        </div>
       )}
+    </div>
+  )
+}
+
+function DebateSummaryFooter({ debate }: { debate: DebateWithPlayers }) {
+  if (!debate.final_summary) return null
+
+  return (
+    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-4">
+      <p className="font-bold mb-3 text-center">総評</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white/10 rounded p-3">
+          <p className="font-semibold text-blue-200 mb-2">
+            {debate.player1?.display_name}
+          </p>
+          <p className="text-sm text-white/80 whitespace-pre-wrap">
+            {debate.final_summary.player1_reason}
+          </p>
+        </div>
+        <div className="bg-white/10 rounded p-3">
+          <p className="font-semibold text-red-200 mb-2">
+            {debate.player2?.display_name}
+          </p>
+          <p className="text-sm text-white/80 whitespace-pre-wrap">
+            {debate.final_summary.player2_reason}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
