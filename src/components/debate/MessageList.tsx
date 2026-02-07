@@ -45,8 +45,18 @@ export function MessageList({ messages, currentUserId, player1Id }: Props) {
                   </p>
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                   {msg.ai_evaluation && (
-                    <div className="mt-2 pt-2 border-t border-white/20 text-xs">
+                    <div className="mt-2 pt-2 border-t border-white/20 text-xs space-y-1">
                       <p>{msg.ai_evaluation.latest_feedback || msg.ai_evaluation.reasoning || ''}</p>
+                      {msg.ai_evaluation.p1_contradictions && (
+                        <p className={isMine ? 'text-yellow-200' : 'text-yellow-600 dark:text-yellow-400'}>
+                          P1矛盾: {msg.ai_evaluation.p1_contradictions}
+                        </p>
+                      )}
+                      {msg.ai_evaluation.p2_contradictions && (
+                        <p className={isMine ? 'text-yellow-200' : 'text-yellow-600 dark:text-yellow-400'}>
+                          P2矛盾: {msg.ai_evaluation.p2_contradictions}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

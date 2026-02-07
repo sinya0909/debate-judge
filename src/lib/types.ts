@@ -59,11 +59,25 @@ export type Message = {
 }
 
 // AI評価
+export type FallacyEntry = {
+  message: number     // 発言番号
+  player: string      // "Player1" or "Player2"
+  type: string        // 詭弁の種類
+  reason: string      // 検出理由
+  penalty: number     // 減点値
+}
+
 export type AIEvaluation = {
   player1_score: number // Player1の総合スコア 0〜10
   player2_score: number // Player2の総合スコア 0〜10
   latest_feedback: string // 最新発言へのフィードバック
-  // 旧形式との互換用
+  p1_fallacies?: FallacyEntry[] // Player1が犯した詭弁
+  p2_fallacies?: FallacyEntry[] // Player2が犯した詭弁
+  p1_merits?: string[]  // Player1の加点理由
+  p2_merits?: string[]  // Player2の加点理由
+  // 旧互換
+  p1_contradictions?: string
+  p2_contradictions?: string
   statement_score?: number
   reasoning?: string
 }
